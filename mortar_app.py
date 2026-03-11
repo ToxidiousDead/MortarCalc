@@ -43,47 +43,47 @@ def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0):
   range_m = math.sqrt(delta_x**2 + delta_y**2)
 
 if range_m == 0:
-raise ValueError("You are standing on the target - no adjustment possible.")
+  raise ValueError("You are standing on the target - no adjustment possible.")
 
-# Bearing in mils
-bearing_deg = (90 - math.degrees(math.atan2(delta_y, delta_x))) % 360
-direction_mils = round(bearing_deg * (6400 / 360))
+  # Bearing in mils
+  bearing_deg = (90 - math.degrees(math.atan2(delta_y, delta_x))) % 360
+  direction_mils = round(bearing_deg * (6400 / 360))
 
-# Find ring + table
-ring = None
-table = None
+  # Find ring + table
+  ring = None
+  table = None
 for r in range(len(firing_tables)):
-tbl = firing_tables[r]
+  tbl = firing_tables[r]
 if min(tbl.keys()) <= range_m <= max(tbl.keys()):
-ring = r
-table = tbl
+  ring = r
+  table = tbl
 break
 
 if ring is None:
-raise ValueError(f"Range {range_m:.0f}m is out of mortar range (50-2900m).")
+  raise ValueError(f"Range {range_m:.0f}m is out of mortar range (50-2900m).")
 
-# Interpolate elevation and TOF
-ranges = sorted(table.keys())
+  # Interpolate elevation and TOF
+  ranges = sorted(table.keys())
 for i in range(len(ranges) - 1):
-r1 = ranges[i]
-r2 = ranges[i + 1]
+  r1 = ranges[i]
+  r2 = ranges[i + 1]
 if r1 <= range_m <= r2:
-elev1, tof1 = table[r1]
-elev2, tof2 = table[r2]
-fraction = (range_m - r1) / (r2 - r1)
-elevation_mils = elev1 + fraction * (elev2 - elev1)
-time_of_flight = tof1 + fraction * (tof2 - tof1)
+  elev1, tof1 = table[r1]
+  elev2, tof2 = table[r2]
+  fraction = (range_m - r1) / (r2 - r1)
+  elevation_mils = elev1 + fraction * (elev2 - elev1)
+  time_of_flight = tof1 + fraction * (tof2 - tof1)
 break
 else:
-elevation_mils, time_of_flight = table[range_m]
+  elevation_mils, time_of_flight = table[range_m]
 
-elevation_mils = round(elevation_mils)
-time_of_flight = round(time_of_flight, 1)
+  elevation_mils = round(elevation_mils)
+  time_of_flight = round(time_of_flight, 1)
 
 # Site correction for height
-site_deg = math.degrees(math.atan(delta_elevation_m / range_m))
-site_mils = round(site_deg * (6400 / 360))
-adjusted_elevation_mils = round(elevation_mils + site_mils)
+  site_deg = math.degrees(math.atan(delta_elevation_m / range_m))
+  site_mils = round(site_deg * (6400 / 360))
+  adjusted_elevation_mils = round(elevation_mils + site_mils)
 
 return {
 "direction_mils": direction_mils,
@@ -100,38 +100,38 @@ st.markdown("Enter your grids (6-digit) and elevation difference. Positive = tar
 
 col1, col2 = st.columns(2)
 with col1:
-own_grid = st.text_input("Your grid (e.g., 594138)", max_chars=6)
+  own_grid = st.text_input("Your grid (e.g., 594138)", max_chars=6)
 with col2:
-target_grid = st.text_input("Target grid (e.g., 625295)", max_chars=6)
+  target_grid = st.text_input("Target grid (e.g., 625295)", max_chars=6)
 
-delta_elevation = st.number_input("Elevation diff (m) — positive = target higher", value=0, step=1)
+  delta_elevation = st.number_input("Elevation diff (m) — positive = target higher", value=0, step=1)
 
 if st.button("Calculate Mortar Adjustment"):
-if not own_grid or not target_grid or len(own_grid) != 6 or len(target_grid) != 6:
-st.error("Please enter valid 6-digit grids.")
+  if not own_grid or not target_grid or len(own_grid) != 6 or len(target_grid) != 6:
+    st.error("Please enter valid 6-digit grids.")
 else:
-try:
-result = calculate_mortar_adjustment(own_grid, target_grid, delta_elevation)
+  try:
+    result = calculate_mortar_adjustment(own_grid, target_grid, delta_elevation)
 
-st.success("Mortar Adjustment Information:")
-st.markdown(f"**Direction:** {result['direction_mils']} mils")
-st.markdown(f"**Adjusted Elevation:** {result['elevation_mils']} mils")
-st.markdown(f"**Rings / Charge:** {result['rings']}")
-st.markdown(f"**Horizontal Range:** {result['range_m']} m")
-st.markdown(f"**Time of Flight:** {result['time_of_flight_sec']} seconds")
-st.markdown(f"**Elevation difference:** {result['elevation_diff_m']} m")
-st.markdown(f"**Site correction applied:** {result['site_correction_mils']} mils")
+    st.success("Mortar Adjustment Information:")
+    st.markdown(f"**Direction:** {result['direction_mils']} mils")
+    st.markdown(f"**Adjusted Elevation:** {result['elevation_mils']} mils")
+    st.markdown(f"**Rings / Charge:** {result['rings']}")
+    st.markdown(f"**Horizontal Range:** {result['range_m']} m")
+    st.markdown(f"**Time of Flight:** {result['time_of_flight_sec']} seconds")
+    st.markdown(f"**Elevation difference:** {result['elevation_diff_m']} m")
+    st.markdown(f"**Site correction applied:** {result['site_correction_mils']} mils")
 
-st.info("Assumes flat/no wind. Adjust manually in-game if needed.")
+    st.info("Assumes flat/no wind. Adjust manually in-game if needed.")
 except ValueError as e:
-st.error(str(e))
+  st.error(str(e))
 
-result = calculate_mortar_adjustment(own, target, delta)
-print("\nMortar Adjustment Information:")
-print(f"Direction: {result['direction_mils']} mils")
-print(f"Adjusted Elevation: {result['elevation_mils']} mils")
-print(f"Rings: {result['rings']}")
-print(f"Horizontal Range: {result['range_m']} m")
-print(f"Time of Flight: {result['time_of_flight_sec']} seconds")
-print(f"Elevation difference: {result['elevation_diff_m']} m")
-print(f"Site correction applied: {result['site_correction_mils']} mils")
+  result = calculate_mortar_adjustment(own, target, delta)
+  print("\nMortar Adjustment Information:")
+  print(f"Direction: {result['direction_mils']} mils")
+  print(f"Adjusted Elevation: {result['elevation_mils']} mils")
+  print(f"Rings: {result['rings']}")
+  print(f"Horizontal Range: {result['range_m']} m")
+  print(f"Time of Flight: {result['time_of_flight_sec']} seconds")
+  print(f"Elevation difference: {result['elevation_diff_m']} m")
+  print(f"Site correction applied: {result['site_correction_mils']} mils")
