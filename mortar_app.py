@@ -33,14 +33,14 @@ firing_tables = [
 ]
 
 def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0):
-x_own = int(own_grid[:3]) * 10
-y_own = int(own_grid[3:]) * 10
-x_target = int(target_grid[:3]) * 10
-y_target = int(target_grid[3:]) * 10
+  x_own = int(own_grid[:3]) * 10
+  y_own = int(own_grid[3:]) * 10
+  x_target = int(target_grid[:3]) * 10
+  y_target = int(target_grid[3:]) * 10
 
-delta_x = x_target - x_own
-delta_y = y_target - y_own
-range_m = math.sqrt(delta_x**2 + delta_y**2)
+  delta_x = x_target - x_own
+  delta_y = y_target - y_own
+  range_m = math.sqrt(delta_x**2 + delta_y**2)
 
 if range_m == 0:
 raise ValueError("You are standing on the target - no adjustment possible.")
