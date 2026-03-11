@@ -1,4 +1,6 @@
 import streamlit as st
+st.title("Mortar Calculator - Test Load")
+st.write("If you see this, the app is running!")
 import math
 
 # Updated firing tables with Time of Flight (sec) - sourced from Arma Reforger in-game data
