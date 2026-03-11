@@ -74,16 +74,16 @@ if r1 <= range_m <= r2:
   elevation_mils = elev1 + fraction * (elev2 - elev1)
   time_of_flight = tof1 + fraction * (tof2 - tof1)
 break
-else:
-  elevation_mils, time_of_flight = table[range_m]
+  else:
+    elevation_mils, time_of_flight = table[range_m]
 
-  elevation_mils = round(elevation_mils)
-  time_of_flight = round(time_of_flight, 1)
+    elevation_mils = round(elevation_mils)
+    time_of_flight = round(time_of_flight, 1)
 
-# Site correction for height
-  site_deg = math.degrees(math.atan(delta_elevation_m / range_m))
-  site_mils = round(site_deg * (6400 / 360))
-  adjusted_elevation_mils = round(elevation_mils + site_mils)
+    # Site correction for height
+    site_deg = math.degrees(math.atan(delta_elevation_m / range_m))
+    site_mils = round(site_deg * (6400 / 360))
+    adjusted_elevation_mils = round(elevation_mils + site_mils)
 
 return {
 "direction_mils": direction_mils,
