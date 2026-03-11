@@ -73,7 +73,7 @@ if r1 <= range_m <= r2:
   fraction = (range_m - r1) / (r2 - r1)
   elevation_mils = elev1 + fraction * (elev2 - elev1)
   time_of_flight = tof1 + fraction * (tof2 - tof1)
-break
+break:
 else:
   elevation_mils, time_of_flight = table[range_m]
 
