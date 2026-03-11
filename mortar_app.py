@@ -11,6 +11,20 @@ with col2:
     target_grid = st.text_input("Target grid (e.g., 625295)", max_chars=6)
 
 delta_elevation = st.number_input("Elevation diff (m) — positive = target higher", value=0, step=1)
+if st.button("Calculate Mortar Adjustment"):
+    if not own_grid or not target_grid or len(own_grid) != 6 or len(target_grid) != 6:
+        st.error("Please enter valid 6-digit grids in both fields.")
+    else:
+        try:
+            # Convert delta to int/float safely
+            delta = float(delta_elevation) if delta_elevation else 0
+            result = calculate_mortar_adjustment(own_grid.strip(), target_grid.strip(), delta)
+            # Your display code here (st.success, st.markdown, etc.)
+        except NameError as e:
+            st.error(f"Variable missing: {e}")
+        except Exception as e:
+            st.error(f"Calculation failed: {str(e)}")
+
 
 if st.button("Calculate Mortar Adjustment"):
     if not own_grid or not target_grid or len(own_grid) != 6 or len(target_grid) != 6:
