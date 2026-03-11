@@ -1,7 +1,38 @@
 import streamlit as st
-st.title("Mortar Calculator - Test Load")
-st.write("If you see this, the app is running!")
 import math
+
+st.title("Arma Reforger Mortar Calculator")
+st.markdown("Enter your grids (6-digit) and elevation difference. Positive = target higher.")
+
+col1, col2 = st.columns(2)
+with col1:
+    own_grid = st.text_input("Your grid (e.g., 594138)", max_chars=6)
+with col2:
+    target_grid = st.text_input("Target grid (e.g., 625295)", max_chars=6)
+
+delta_elevation = st.number_input("Elevation diff (m) — positive = target higher", value=0, step=1)
+
+if st.button("Calculate Mortar Adjustment"):
+    if not own_grid or not target_grid or len(own_grid) != 6 or len(target_grid) != 6:
+        st.error("Please enter valid 6-digit grids.")
+    else:
+        try:
+            result = calculate_mortar_adjustment(own_grid, target_grid, delta_elevation)
+            
+            st.success("Mortar Adjustment Information:")
+            st.markdown(f"**Direction:** {result['direction_mils']} mils")
+            st.markdown(f"**Adjusted Elevation:** {result['elevation_mils']} mils")
+            st.markdown(f"**Rings / Charge:** {result['rings']}")
+            st.markdown(f"**Horizontal Range:** {result['range_m']} m")
+            st.markdown(f"**Time of Flight:** {result['time_of_flight_sec']} seconds")
+            st.markdown(f"**Elevation difference:** {result['elevation_diff_m']} m")
+            st.markdown(f"**Site correction applied:** {result['site_correction_mils']} mils")
+            
+            st.info("Assumes flat/no wind. Adjust manually in-game if needed.")
+        except ValueError as e:
+            st.error(str(e))
+# ... your firing_tables and function here ...
+
 
 # Updated firing tables with Time of Flight (sec) - sourced from Arma Reforger in-game data
 firing_tables = [
@@ -114,44 +145,3 @@ if __name__ == "__main__":
     print(f"Elevation difference: {result['elevation_diff_m']} m")
     print(f"Site correction applied: {result['site_correction_mils']} mils")
 
-st.title("Arma Reforger Mortar Calculator")
-st.markdown("Enter your grids (6-digit) and elevation difference. Positive = target higher.")
-
-col1, col2 = st.columns(2)
-with col1:
-  own_grid = st.text_input("Your grid (e.g., 594138)", max_chars=6)
-with col2:
-  target_grid = st.text_input("Target grid (e.g., 625295)", max_chars=6)
-
-  delta_elevation = st.number_input("Elevation diff (m) — positive = target higher", value=0, step=1)
-
-st.title("Arma Reforger Mortar Calculator")
-st.markdown("Enter your grids (6-digit) and elevation difference. Positive = target higher.")
-
-col1, col2 = st.columns(2)
-with col1:
-    own_grid = st.text_input("Your grid (e.g., 594138)", max_chars=6)
-with col2:
-    target_grid = st.text_input("Target grid (e.g., 625295)", max_chars=6)
-
-delta_elevation = st.number_input("Elevation diff (m) — positive = target higher", value=0, step=1)
-
-if st.button("Calculate Mortar Adjustment"):
-    if not own_grid or not target_grid or len(own_grid) != 6 or len(target_grid) != 6:
-        st.error("Please enter valid 6-digit grids.")
-    else:
-        try:
-            result = calculate_mortar_adjustment(own_grid, target_grid, delta_elevation)
-            
-            st.success("Mortar Adjustment Information:")
-            st.markdown(f"**Direction:** {result['direction_mils']} mils")
-            st.markdown(f"**Adjusted Elevation:** {result['elevation_mils']} mils")
-            st.markdown(f"**Rings / Charge:** {result['rings']}")
-            st.markdown(f"**Horizontal Range:** {result['range_m']} m")
-            st.markdown(f"**Time of Flight:** {result['time_of_flight_sec']} seconds")
-            st.markdown(f"**Elevation difference:** {result['elevation_diff_m']} m")
-            st.markdown(f"**Site correction applied:** {result['site_correction_mils']} mils")
-            
-            st.info("Assumes flat/no wind. Adjust manually in-game if needed.")
-        except ValueError as e:
-            st.error(str(e))
