@@ -1,6 +1,69 @@
 import streamlit as st
 import math
 
+def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0):
+    x_own = int(own_grid[:3]) * 10
+    y_own = int(own_grid[3:]) * 10
+    x_target = int(target_grid[:3]) * 10
+    y_target = int(target_grid[3:]) * 10
+    
+    delta_x = x_target - x_own
+    delta_y = y_target - y_own
+    range_m = math.sqrt(delta_x**2 + delta_y**2)
+    
+    if range_m == 0:
+        raise ValueError("You are standing on the target - no adjustment possible.")
+    
+    # Bearing in mils
+    bearing_deg = (90 - math.degrees(math.atan2(delta_y, delta_x))) % 360
+    direction_mils = round(bearing_deg * (6400 / 360))
+    
+    # Find ring + table
+    ring = None
+    table = None
+    for r in range(len(firing_tables)):
+        tbl = firing_tables[r]
+        if min(tbl.keys()) <= range_m <= max(tbl.keys()):
+            ring = r
+            table = tbl
+            break
+    
+    if ring is None:
+        raise ValueError(f"Range {range_m:.0f}m is out of mortar range (50-2900m).")
+    
+    # Interpolate elevation and TOF
+    ranges = sorted(table.keys())
+    for i in range(len(ranges) - 1):
+        r1 = ranges[i]
+        r2 = ranges[i + 1]
+        if r1 <= range_m <= r2:
+            elev1, tof1 = table[r1]
+            elev2, tof2 = table[r2]
+            fraction = (range_m - r1) / (r2 - r1)
+            elevation_mils = elev1 + fraction * (elev2 - elev1)
+            time_of_flight = tof1 + fraction * (tof2 - tof1)
+            break
+    else:
+        elevation_mils, time_of_flight = table[range_m]
+    
+    elevation_mils = round(elevation_mils)
+    time_of_flight = round(time_of_flight, 1)
+    
+    # Site correction for height
+    site_deg = math.degrees(math.atan(delta_elevation_m / range_m))
+    site_mils = round(site_deg * (6400 / 360))
+    adjusted_elevation_mils = round(elevation_mils + site_mils)
+    
+    return {
+        "direction_mils": direction_mils,
+        "elevation_mils": adjusted_elevation_mils,
+        "rings": ring,
+        "range_m": round(range_m),
+        "time_of_flight_sec": time_of_flight,
+        "site_correction_mils": site_mils,
+        "elevation_diff_m": delta_elevation_m
+    }
+
 st.title("Arma Reforger Mortar Calculator")
 st.markdown("Enter your grids (6-digit) and elevation difference. Positive = target higher.")
 
@@ -69,68 +132,6 @@ firing_tables = [
      2800: (942, 29.2), 2900: (870, 27.7)}
 ]
 
-def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0):
-    x_own = int(own_grid[:3]) * 10
-    y_own = int(own_grid[3:]) * 10
-    x_target = int(target_grid[:3]) * 10
-    y_target = int(target_grid[3:]) * 10
-    
-    delta_x = x_target - x_own
-    delta_y = y_target - y_own
-    range_m = math.sqrt(delta_x**2 + delta_y**2)
-    
-    if range_m == 0:
-        raise ValueError("You are standing on the target - no adjustment possible.")
-    
-    # Bearing in mils
-    bearing_deg = (90 - math.degrees(math.atan2(delta_y, delta_x))) % 360
-    direction_mils = round(bearing_deg * (6400 / 360))
-    
-    # Find ring + table
-    ring = None
-    table = None
-    for r in range(len(firing_tables)):
-        tbl = firing_tables[r]
-        if min(tbl.keys()) <= range_m <= max(tbl.keys()):
-            ring = r
-            table = tbl
-            break
-    
-    if ring is None:
-        raise ValueError(f"Range {range_m:.0f}m is out of mortar range (50-2900m).")
-    
-    # Interpolate elevation and TOF
-    ranges = sorted(table.keys())
-    for i in range(len(ranges) - 1):
-        r1 = ranges[i]
-        r2 = ranges[i + 1]
-        if r1 <= range_m <= r2:
-            elev1, tof1 = table[r1]
-            elev2, tof2 = table[r2]
-            fraction = (range_m - r1) / (r2 - r1)
-            elevation_mils = elev1 + fraction * (elev2 - elev1)
-            time_of_flight = tof1 + fraction * (tof2 - tof1)
-            break
-    else:
-        elevation_mils, time_of_flight = table[range_m]
-    
-    elevation_mils = round(elevation_mils)
-    time_of_flight = round(time_of_flight, 1)
-    
-    # Site correction for height
-    site_deg = math.degrees(math.atan(delta_elevation_m / range_m))
-    site_mils = round(site_deg * (6400 / 360))
-    adjusted_elevation_mils = round(elevation_mils + site_mils)
-    
-    return {
-        "direction_mils": direction_mils,
-        "elevation_mils": adjusted_elevation_mils,
-        "rings": ring,
-        "range_m": round(range_m),
-        "time_of_flight_sec": time_of_flight,
-        "site_correction_mils": site_mils,
-        "elevation_diff_m": delta_elevation_m
-    }
 
 # For standalone use
 if __name__ == "__main__":
