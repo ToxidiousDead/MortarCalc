@@ -109,26 +109,49 @@ delta_elevation = st.number_input("Elevation diff (m) — positive = target high
 
 if st.button("Calculate Mortar Adjustment"):
     if not own_grid or not target_grid or len(own_grid) != 6 or len(target_grid) != 6:
-        st.error("Please enter valid 6-digit grids.")
+        st.error("Please enter valid 6-digit grids in both fields.")
     else:
         try:
-            result = calculate_mortar_adjustment(own_grid, target_grid, delta_elevation)
-            
-            st.success("Mortar Adjustment Information:")
-            st.markdown(f"**Direction:** {result['direction_mils']} mils")
-            st.markdown(f"**Adjusted Elevation:** {result['elevation_mils']} mils")
-            st.markdown(f"**Rings / Charge:** {result['rings']}")
-            st.markdown(f"**Horizontal Range:** {result['range_m']} m")
-            st.markdown(f"**Time of Flight:** {result['time_of_flight_sec']} seconds")
-            st.markdown(f"**Elevation difference:** {result['elevation_diff_m']} m")
-            st.markdown(f"**Site correction applied:** {result['site_correction_mils']} mils")
-            
-            st.info("Assumes flat/no wind. Adjust manually in-game if needed.")
+            selected_tables = mortar_tables.get(faction_key, {}).get(shell_type, None)
+            if selected_tables is None or len(selected_tables) == 0:
+                st.error(f"Firing tables not yet available for {faction} - {shell_type}. "
+                         "Add real in-game data to mortar_tables dict (from ballistic manual or testing).")
+            else:
+                # NEW: Calculate approximate range first (quick check without full sqrt)
+                # This is approximate but fast and avoids full calc if obviously invalid
+                approx_delta_x = int(target_grid[:3]) - int(own_grid[:3])
+                approx_delta_y = int(target_grid[3:]) - int(own_grid[3:])
+                approx_range = 10 * math.sqrt(approx_delta_x**2 + approx_delta_y**2)
+                
+                # Find max range from the tables (highest key across all rings)
+                max_range = 0
+                for tbl in selected_tables:
+                    if tbl:  # skip empty rings
+                        max_range = max(max_range, max(tbl.keys()))
+                
+                if approx_range > max_range + 50:  # small buffer for rounding
+                    st.error(f"Calculated range ≈{approx_range:.0f}m exceeds max for {faction} - {shell_type} "
+                             f"({max_range}m). Move closer or select a different shell/faction.")
+                else:
+                    # Proceed with full calculation
+                    result = calculate_mortar_adjustment(own_grid, target_grid, delta_elevation, firing_tables=selected_tables)
+                    
+                    st.success("Mortar Adjustment Information:")
+                    st.markdown(f"**Faction / Shell:** {faction} - {shell_type}")
+                    st.markdown(f"**Direction:** {result['direction_mils']} mils")
+                    st.markdown(f"**Adjusted Elevation:** {result['elevation_mils']} mils")
+                    st.markdown(f"**Rings / Charge:** {result['rings']}")
+                    st.markdown(f"**Horizontal Range:** {result['range_m']} m")
+                    st.markdown(f"**Time of Flight:** {result['time_of_flight_sec']} seconds")
+                    st.markdown(f"**Elevation difference:** {result['elevation_diff_m']} m")
+                    st.markdown(f"**Site correction applied:** {result['site_correction_mils']} mils")
+                    
+                    if result['range_m'] > max_range - 100:
+                        st.warning(f"Range {result['range_m']}m is near/at max for this shell ({max_range}m). "
+                                   "Accuracy may drop — consider repositioning.")
+                    
+                    st.info("Assumes flat terrain / no wind. Verify in-game ballistic manual if needed.")
         except ValueError as e:
             st.error(str(e))
-        except NameError as e:
-            st.error(f"Variable missing: {e}")
         except Exception as e:
             st.error(f"Calculation failed: {str(e)}")
-if st.button("Clear Inputs"):
-    st.rerun()  # Resets form
