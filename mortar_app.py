@@ -1,36 +1,41 @@
 import streamlit as st
 import math
 
-def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0):
+def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0, firing_tables=None):
+    if firing_tables is None or not firing_tables:
+        raise ValueError("No valid firing tables for the selected faction and shell type.")
+    
     x_own = int(own_grid[:3]) * 10
     y_own = int(own_grid[3:]) * 10
     x_target = int(target_grid[:3]) * 10
     y_target = int(target_grid[3:]) * 10
-    
+   
     delta_x = x_target - x_own
     delta_y = y_target - y_own
     range_m = math.sqrt(delta_x**2 + delta_y**2)
-    
+   
     if range_m == 0:
         raise ValueError("You are standing on the target - no adjustment possible.")
-        
+   
     # Bearing in mils
     bearing_deg = (90 - math.degrees(math.atan2(delta_y, delta_x))) % 360
     direction_mils = round(bearing_deg * (6400 / 360))
-    
+   
     # Find ring + table
     ring = None
     table = None
     for r in range(len(firing_tables)):
         tbl = firing_tables[r]
-        if min(tbl.keys()) <= range_m <= max(tbl.keys()):
+        min_r = min(tbl.keys())
+        max_r = max(tbl.keys())
+        if min_r <= range_m <= max_r:
             ring = r
             table = tbl
             break
-    
+   
     if ring is None:
-        raise ValueError(f"Range {range_m:.0f}m is out of mortar range (50-2900m).")
-    
+        raise ValueError(f"Range {range_m:.0f}m is out of range for this shell (check selected faction/shell).")
+   
     # Interpolate elevation and TOF
     ranges = sorted(table.keys())
     for i in range(len(ranges) - 1):
@@ -45,15 +50,15 @@ def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0):
             break
     else:
         elevation_mils, time_of_flight = table[range_m]
-    
+   
     elevation_mils = round(elevation_mils)
     time_of_flight = round(time_of_flight, 1)
-    
+   
     # Site correction for height
     site_deg = math.degrees(math.atan(delta_elevation_m / range_m))
     site_mils = round(site_deg * (6400 / 360))
     adjusted_elevation_mils = round(elevation_mils + site_mils)
-    
+   
     return {
         "direction_mils": direction_mils,
         "elevation_mils": adjusted_elevation_mils,
@@ -63,41 +68,69 @@ def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0):
         "site_correction_mils": site_mils,
         "elevation_diff_m": delta_elevation_m
     }
-        
-# Updated firing tables with Time of Flight (sec) - sourced from Arma Reforger in-game data
-firing_tables = [
-    # Ring 0 (Disp 6m)
-    {50: (1540, 13.2), 100: (1479, 13.2), 150: (1416, 13.0), 200: (1350, 12.8),
-     250: (1279, 12.6), 300: (1201, 12.3), 350: (1106, 11.7), 400: (955, 10.7)},
-    # Ring 1 (Disp 14m)
-    {100: (1547, 20.0), 200: (1492, 19.9), 300: (1437, 19.7), 400: (1378, 19.5),
-     500: (1317, 19.2), 600: (1249, 18.8), 700: (1174, 18.3), 800: (1085, 17.5),
-     900: (954, 16.1)},
-    # Ring 2 (Disp 24m)
-    {200: (1538, 26.6), 300: (1507, 26.5), 400: (1475, 26.4), 500: (1443, 26.3),
-     600: (1410, 26.2), 700: (1376, 26.0), 800: (1341, 25.8), 900: (1305, 25.5),
-     1000: (1266, 25.2), 1100: (1225, 24.9), 1200: (1180, 24.4), 1300: (1132, 23.9),
-     1400: (1076, 23.2), 1500: (1009, 22.3), 1600: (912, 20.9)},
-    # Ring 3 (Disp 32m)
-    {300: (1534, 31.7), 400: (1511, 31.6), 500: (1489, 31.6), 600: (1466, 31.5),
-     700: (1442, 31.4), 800: (1419, 31.3), 900: (1395, 31.1), 1000: (1370, 31.0),
-     1100: (1344, 30.8), 1200: (1318, 30.6), 1300: (1291, 30.3), 1400: (1263, 30.1),
-     1500: (1233, 29.8), 1600: (1202, 29.4), 1700: (1169, 29.0), 1800: (1133, 28.5),
-     1900: (1094, 28.0), 2000: (1051, 27.3), 2100: (999, 26.5), 2200: (931, 25.3),
-     2300: (801, 22.7)},
-    # Ring 4 (Disp 42m)
-    {400: (1531, 36.3), 500: (1514, 36.2), 600: (1496, 36.2), 700: (1478, 36.1),
-     800: (1460, 36.0), 900: (1442, 35.9), 1000: (1424, 35.8), 1100: (1405, 35.7),
-     1200: (1385, 35.6), 1300: (1366, 35.4), 1400: (1346, 35.3), 1500: (1326, 35.1),
-     1600: (1305, 34.9), 1700: (1283, 34.6), 1800: (1261, 34.4), 1900: (1238, 34.1),
-     2000: (1214, 33.8), 2100: (1188, 33.5), 2200: (1162, 33.1), 2300: (1134, 32.7),
-     2400: (1104, 32.2), 2500: (1070, 31.7), 2600: (1034, 31.0), 2700: (993, 30.3),
-     2800: (942, 29.2), 2900: (870, 27.7)}
-]
 
+# Mortar tables dictionary - US HE is your original; others are placeholders
+# Fill placeholders with real in-game values (from ballistic manual screenshots or testing)
+mortar_tables = {
+    "US": {
+        "HE": [  # Your full original US M252 HE tables (paste the complete list here)
+            # Ring 0 (Disp 6m)
+            {50: (1540, 13.2), 100: (1479, 13.2), 150: (1416, 13.0), 200: (1350, 12.8),
+             250: (1279, 12.6), 300: (1201, 12.3), 350: (1106, 11.7), 400: (955, 10.7)},
+            # Ring 1 (Disp 14m)
+            {100: (1547, 20.0), 200: (1492, 19.9), 300: (1437, 19.7), 400: (1378, 19.5),
+             500: (1317, 19.2), 600: (1249, 18.8), 700: (1174, 18.3), 800: (1085, 17.5),
+             900: (954, 16.1)},
+            # Ring 2 (Disp 24m) - paste full from your code
+            {200: (1538, 26.6), 300: (1507, 26.5), 400: (1475, 26.4), 500: (1443, 26.3),
+             600: (1410, 26.2), 700: (1376, 26.0), 800: (1341, 25.8), 900: (1305, 25.5),
+             1000: (1266, 25.2), 1100: (1225, 24.9), 1200: (1180, 24.4), 1300: (1132, 23.9),
+             1400: (1076, 23.2), 1500: (1009, 22.3), 1600: (912, 20.9)},
+            # Ring 3 (Disp 32m) - paste full
+            {300: (1534, 31.7), 400: (1511, 31.6), 500: (1489, 31.6), 600: (1466, 31.5),
+             700: (1442, 31.4), 800: (1419, 31.3), 900: (1395, 31.1), 1000: (1370, 31.0),
+             1100: (1344, 30.8), 1200: (1318, 30.6), 1300: (1291, 30.3), 1400: (1263, 30.1),
+             1500: (1233, 29.8), 1600: (1202, 29.4), 1700: (1169, 29.0), 1800: (1133, 28.5),
+             1900: (1094, 28.0), 2000: (1051, 27.3), 2100: (999, 26.5), 2200: (931, 25.3),
+             2300: (801, 22.7)},
+            # Ring 4 (Disp 42m) - paste full
+            {400: (1531, 36.3), 500: (1514, 36.2), 600: (1496, 36.2), 700: (1478, 36.1),
+             800: (1460, 36.0), 900: (1442, 35.9), 1000: (1424, 35.8), 1100: (1405, 35.7),
+             1200: (1385, 35.6), 1300: (1366, 35.4), 1400: (1346, 35.3), 1500: (1326, 35.1),
+             1600: (1305, 34.9), 1700: (1283, 34.6), 1800: (1261, 34.4), 1900: (1238, 34.1),
+             2000: (1214, 33.8), 2100: (1188, 33.5), 2200: (1162, 33.1), 2300: (1134, 32.7),
+             2400: (1104, 32.2), 2500: (1070, 31.7), 2600: (1034, 31.0), 2700: (993, 30.3),
+             2800: (942, 29.2), 2900: (870, 27.7)}
+        ],
+        "Smoke": [],  # Placeholder: typically shorter max (~1700-2400m), fewer rings
+        "Illumination": [],  # Placeholder: limited rings, longer TOF for hang time
+        "Training": []   # Placeholder: similar to HE but shorter/lower damage
+    },
+    "RU": {
+        "HE": [  # Placeholder for 2B14 Podnos HE (max ~2300m)
+            # Example structure based on sources - REPLACE with real in-game values
+            {100: (1450, 18.5), 300: (1400, 25.0), 500: (1350, 30.0), 800: (1250, 35.0),
+             1200: (1150, 40.0), 1600: (1050, 45.0), 2000: (950, 50.0), 2300: (850, 55.0)},
+            # Add more rings/entries as you test in-game
+        ],
+        "Smoke": [],  # Placeholder
+        "Illumination": []  # Placeholder
+        # Training not typically available for RU in sources
+    }
+}
 
+# UI
 st.title("Arma Reforger Mortar Calculator")
 st.markdown("Enter your grids (6-digit) and elevation difference. Positive = target higher.")
+
+faction = st.selectbox("Mortar Faction", ["US (M252 81mm)", "RU (2B14 82mm)"], index=0)
+shell_type = st.selectbox("Shell Type", ["HE", "Smoke", "Illumination", "Training"], index=0)
+
+faction_key = "US" if faction.startswith("US") else "RU"
+
+if selected_tables := mortar_tables.get(faction_key, {}).get(shell_type):
+    max_r = max(max(tbl.keys()) for tbl in selected_tables if tbl)
+    st.caption(f"Max range for {faction} - {shell_type}: ~{max_r}m")
 
 col1, col2 = st.columns(2)
 with col1:
