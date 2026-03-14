@@ -13,7 +13,13 @@ def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0):
     
     if range_m == 0:
         raise ValueError("You are standing on the target - no adjustment possible.")
-    
+        
+    if own_grid and target_grid and len(own_grid) == 6 and len(target_grid) == 6:
+    # Quick rough range check (approximate)
+    rough_range = 10 * math.sqrt( (int(target_grid[:3]) - int(own_grid[:3]))**2 + (int(target_grid[3:]) - int(own_grid[3:]))**2 )
+    if rough_range > 2900:
+        st.warning(f"Approximate range ~{rough_range}m — likely out of mortar range.")
+        
     # Bearing in mils
     bearing_deg = (90 - math.degrees(math.atan2(delta_y, delta_x))) % 360
     direction_mils = round(bearing_deg * (6400 / 360))
@@ -130,3 +136,5 @@ if st.button("Calculate Mortar Adjustment"):
             st.error(f"Variable missing: {e}")
         except Exception as e:
             st.error(f"Calculation failed: {str(e)}")
+if st.button("Clear Inputs"):
+    st.rerun()  # Resets form
