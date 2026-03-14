@@ -130,25 +130,3 @@ if st.button("Calculate Mortar Adjustment"):
             st.error(f"Variable missing: {e}")
         except Exception as e:
             st.error(f"Calculation failed: {str(e)}")
-# ... your firing_tables and function here ...
-
-
-
-
-# For standalone use
-if __name__ == "__main__":
-    own = input("Enter your 6-digit grid: ").strip()
-    target = input("Enter target 6-digit grid: ").strip()
-    delta_str = input("Enter elevation difference in meters (positive = target higher): ").strip()
-    delta = int(delta_str) if delta_str.lstrip("-").isdigit() else 0
-    
-    result = calculate_mortar_adjustment(own, target, delta)
-    print("\nMortar Adjustment Information:")
-    print(f"Direction: {result['direction_mils']} mils")
-    print(f"Adjusted Elevation: {result['elevation_mils']} mils")
-    print(f"Rings: {result['rings']}")
-    print(f"Horizontal Range: {result['range_m']} m")
-    print(f"Time of Flight: {result['time_of_flight_sec']} seconds")
-    print(f"Elevation difference: {result['elevation_diff_m']} m")
-    print(f"Site correction applied: {result['site_correction_mils']} mils")
-
