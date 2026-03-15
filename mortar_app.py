@@ -381,9 +381,14 @@ if st.button("Calculate Mortar Adjustment"):
 if st.session_state.last_result:
     st.markdown("### Last Calculated Solution")
     st.markdown(f"**Faction / Shell:** {st.session_state.last_faction} - {st.session_state.last_shell_type}")
-    st.markdown(f"**🎯 Direction:** <span style='font-size:1.5em; font-weight:bold; color:#00ff9d'>{result['direction_mils']} mils</span>", unsafe_allow_html=True)
-    st.markdown(f"**📏 Adjusted Elevation:** <span style='font-size:1.5em; font-weight:bold; color:#ffcc00'>{result['elevation_mils']} mils</span>", unsafe_allow_html=True)
-    st.markdown(f"**🔥 Rings / Charge:** <span style='font-size:1.5em; font-weight:bold; color:#ff6b6b'>{result['rings']}</span>", unsafe_allow_html=True)
-    st.markdown(f"**⏱️ Time of Flight:** <span style='font-size:1.5em; font-weight:bold; color:#4dabf7'>{result['time_of_flight_sec']} seconds</span>", unsafe_allow_html=True)
-
+    st.markdown(f"**Your grid:** {st.session_state.last_own_grid}")
+    st.markdown(f"**Target grid:** {st.session_state.last_target_grid}")
+    st.markdown(f"**Elevation diff:** {st.session_state.last_delta_elevation} m")
+    
+    # Stand-out key values using stored result
+    st.markdown(f"**🎯 Direction:** <span style='font-size:1.5em; font-weight:bold; color:#00ff9d'>{st.session_state.last_result['direction_mils']} mils</span>", unsafe_allow_html=True)
+    st.markdown(f"**📏 Adjusted Elevation:** <span style='font-size:1.5em; font-weight:bold; color:#ffcc00'>{st.session_state.last_result['elevation_mils']} mils</span>", unsafe_allow_html=True)
+    st.markdown(f"**🔥 Rings / Charge:** <span style='font-size:1.5em; font-weight:bold; color:#ff6b6b'>{st.session_state.last_result['rings']}</span>", unsafe_allow_html=True)
+    st.markdown(f"**⏱️ Time of Flight:** <span style='font-size:1.5em; font-weight:bold; color:#4dabf7'>{st.session_state.last_result['time_of_flight_sec']} seconds</span>", unsafe_allow_html=True)
+    
     st.markdown("---")
