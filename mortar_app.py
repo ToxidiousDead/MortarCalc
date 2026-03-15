@@ -306,7 +306,7 @@ if st.button("Calculate Mortar Adjustment"):
             if selected_tables is None or len(selected_tables) == 0:
                 st.error(f"Firing tables not yet available for {faction} - {shell_type}.")
             else:
-                # Optional: quick range validity check (from earlier)
+                # Quick range check
                 approx_delta_x = int(target_grid[:3]) - int(own_grid[:3])
                 approx_delta_y = int(target_grid[3:]) - int(own_grid[3:])
                 approx_range = 10 * math.sqrt(approx_delta_x**2 + approx_delta_y**2)
@@ -316,65 +316,38 @@ if st.button("Calculate Mortar Adjustment"):
                 else:
                     result = calculate_mortar_adjustment(own_grid, target_grid, delta_elevation, firing_tables=selected_tables)
 
+                    # Store last result for persistence across reruns
                     st.session_state.last_result = result
                     st.session_state.last_own_grid = own_grid
                     st.session_state.last_target_grid = target_grid
                     st.session_state.last_delta_elevation = delta_elevation
                     st.session_state.last_faction = faction
                     st.session_state.last_shell_type = shell_type
-                    
-                    # Display result
+
+                    # Display result (this will show every time now)
                     st.success("Mortar Adjustment Information:")
+
+                    st.success("Mortar Adjustment Information:")
+
+                    # Stand-out key values with larger text, emojis, and bold
+                    st.markdown(f"**🎯 Direction:** <span style='font-size:1.5em; font-weight:bold; color:#00ff9d'>{result['direction_mils']} mils</span>", unsafe_allow_html=True)
+                    st.markdown(f"**📏 Adjusted Elevation:** <span style='font-size:1.5em; font-weight:bold; color:#ffcc00'>{result['elevation_mils']} mils</span>", unsafe_allow_html=True)
+                    st.markdown(f"**🔥 Rings / Charge:** <span style='font-size:1.5em; font-weight:bold; color:#ff6b6b'>{result['rings']}</span>", unsafe_allow_html=True)
+                    st.markdown(f"**⏱️ Time of Flight:** <span style='font-size:1.5em; font-weight:bold; color:#4dabf7'>{result['time_of_flight_sec']} seconds</span>", unsafe_allow_html=True)
                     st.markdown(f"**Faction / Shell:** {faction} - {shell_type}")
-                    st.markdown(f"**Your grid:** {own_grid}")
-                    st.markdown(f"**Target grid:** {target_grid}")
                     st.markdown(f"**Elevation diff:** {delta_elevation} m")
-                    st.markdown(f"**Direction:** {result['direction_mils']} mils")
-                    st.markdown(f"**Adjusted Elevation:** {result['elevation_mils']} mils")
-                    st.markdown(f"**Rings / Charge:** {result['rings']}")
                     st.markdown(f"**Horizontal Range:** {result['range_m']} m")
-                    st.markdown(f"**Time of Flight:** {result['time_of_flight_sec']} seconds")
                     st.markdown(f"**Site correction:** {result['site_correction_mils']} mils")
-                    
+
                     st.info("Assumes flat terrain / no wind. Verify in-game.")
-                    
 
                     # ── SAVE FEATURE ────────────────────────────────────────────────
-                    # Initialize saved solutions in session state if not exists
                     if 'saved_solutions' not in st.session_state:
                         st.session_state.saved_solutions = []
 
-                    # Button to trigger save
                     if st.button("💾 Save this solution for later"):
                         st.session_state.show_save_input = True
 
-                    # Show input field only after button press
-                    if 'show_save_input' in st.session_state and st.session_state.show_save_input:
-                        save_name = st.text_input("Enter a name for this firing solution", placeholder="e.g. Enemy squad at hill 245")
-                        col_save, col_cancel = st.columns(2)
-                        with col_save:
-                            if st.button("Confirm Save") and save_name.strip():
-                                # Save the full context
-                                saved_entry = {
-                                    "name": save_name.strip(),
-                                    "timestamp": st.session_state.get('last_calc_time', "now"),
-                                    "own_grid": own_grid,
-                                    "target_grid": target_grid,
-                                    "delta_elevation": delta_elevation,
-                                    "faction": faction,
-                                    "shell_type": shell_type,
-                                    "result": result
-                                }
-                                st.session_state.saved_solutions.append(saved_entry)
-                                st.success(f"Saved as: **{save_name}**")
-                                st.session_state.show_save_input = False  # hide input
-                                st.rerun()  # refresh to show updated list
-                        with col_cancel:
-                            if st.button("Cancel"):
-                                st.session_state.show_save_input = False
-                                st.rerun()
-
-                    # Show saved solutions
                     if st.session_state.get('show_save_input', False):
                         save_name = st.text_input("Enter a name for this firing solution", placeholder="e.g. Enemy squad at hill 245")
                         col_save, col_cancel = st.columns(2)
@@ -404,14 +377,13 @@ if st.button("Calculate Mortar Adjustment"):
         except Exception as e:
             st.error(f"Calculation failed: {str(e)}")
 
-# Optional: Auto-fill inputs if loaded from saved
+# Always show the last result if it exists (prevents disappearance)
 if st.session_state.last_result:
     st.markdown("### Last Calculated Solution")
     st.markdown(f"**Faction / Shell:** {st.session_state.last_faction} - {st.session_state.last_shell_type}")
-    st.markdown(f"**Elevation diff:** {st.session_state.last_delta_elevation} m")
-    st.markdown(f"**Direction:** {st.session_state.last_result['direction_mils']} mils")
-    st.markdown(f"**Adjusted Elevation:** {st.session_state.last_result['elevation_mils']} mils")
-    st.markdown(f"**Rings / Charge:** {st.session_state.last_result['rings']}")
-    st.markdown(f"**Horizontal Range:** {st.session_state.last_result['range_m']} m")
-    st.markdown(f"**Time of Flight:** {st.session_state.last_result['time_of_flight_sec']} seconds")
+    st.markdown(f"**🎯 Direction:** <span style='font-size:1.5em; font-weight:bold; color:#00ff9d'>{result['direction_mils']} mils</span>", unsafe_allow_html=True)
+    st.markdown(f"**📏 Adjusted Elevation:** <span style='font-size:1.5em; font-weight:bold; color:#ffcc00'>{result['elevation_mils']} mils</span>", unsafe_allow_html=True)
+    st.markdown(f"**🔥 Rings / Charge:** <span style='font-size:1.5em; font-weight:bold; color:#ff6b6b'>{result['rings']}</span>", unsafe_allow_html=True)
+    st.markdown(f"**⏱️ Time of Flight:** <span style='font-size:1.5em; font-weight:bold; color:#4dabf7'>{result['time_of_flight_sec']} seconds</span>", unsafe_allow_html=True)
+
     st.markdown("---")
