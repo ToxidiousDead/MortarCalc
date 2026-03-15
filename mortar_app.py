@@ -33,7 +33,7 @@ def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0, firi
     # Bearing in mils
     bearing_deg = (90 - math.degrees(math.atan2(delta_y, delta_x))) % 360
     mils_per_circle = 6000 if faction_key == "RU" else 6400
-    direction_mils = round(bearing_deg * (6400 / 360))
+    direction_mils = round(bearing_deg * (mils_per_circle / 360))
    
     # Find ring + table
     ring = None
