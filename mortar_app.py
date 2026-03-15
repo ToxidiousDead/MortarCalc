@@ -408,13 +408,10 @@ if st.button("Calculate Mortar Adjustment"):
 if st.session_state.last_result:
     st.markdown("### Last Calculated Solution")
     st.markdown(f"**Faction / Shell:** {st.session_state.last_faction} - {st.session_state.last_shell_type}")
-    st.markdown(f"**Your grid:** {st.session_state.last_own_grid}")
-    st.markdown(f"**Target grid:** {st.session_state.last_target_grid}")
     st.markdown(f"**Elevation diff:** {st.session_state.last_delta_elevation} m")
     st.markdown(f"**Direction:** {st.session_state.last_result['direction_mils']} mils")
     st.markdown(f"**Adjusted Elevation:** {st.session_state.last_result['elevation_mils']} mils")
     st.markdown(f"**Rings / Charge:** {st.session_state.last_result['rings']}")
     st.markdown(f"**Horizontal Range:** {st.session_state.last_result['range_m']} m")
     st.markdown(f"**Time of Flight:** {st.session_state.last_result['time_of_flight_sec']} seconds")
-    st.markdown(f"**Site correction:** {st.session_state.last_result['site_correction_mils']} mils")
     st.markdown("---")
