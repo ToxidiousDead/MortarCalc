@@ -1,6 +1,19 @@
 import streamlit as st
 import math
 
+if 'last_result' not in st.session_state:
+    st.session_state.last_result = None
+if 'last_own_grid' not in st.session_state:
+    st.session_state.last_own_grid = ""
+if 'last_target_grid' not in st.session_state:
+    st.session_state.last_target_grid = ""
+if 'last_delta_elevation' not in st.session_state:
+    st.session_state.last_delta_elevation = 0
+if 'last_faction' not in st.session_state:
+    st.session_state.last_faction = ""
+if 'last_shell_type' not in st.session_state:
+    st.session_state.last_shell_type = ""
+
 def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0, firing_tables=None):
     if firing_tables is None or not firing_tables:
         raise ValueError("No valid firing tables for the selected faction and shell type.")
@@ -302,6 +315,13 @@ if st.button("Calculate Mortar Adjustment"):
                     st.error(f"Range ≈{approx_range:.0f}m exceeds max for this shell ({max_range}m).")
                 else:
                     result = calculate_mortar_adjustment(own_grid, target_grid, delta_elevation, firing_tables=selected_tables)
+
+                    st.session_state.last_result = result
+                    st.session_state.last_own_grid = own_grid
+                    st.session_state.last_target_grid = target_grid
+                    st.session_state.last_delta_elevation = delta_elevation
+                    st.session_state.last_faction = faction
+                    st.session_state.last_shell_type = shell_type
                     
                     # Display result
                     st.success("Mortar Adjustment Information:")
@@ -317,6 +337,7 @@ if st.button("Calculate Mortar Adjustment"):
                     st.markdown(f"**Site correction:** {result['site_correction_mils']} mils")
                     
                     st.info("Assumes flat terrain / no wind. Verify in-game.")
+                    
 
                     # ── SAVE FEATURE ────────────────────────────────────────────────
                     # Initialize saved solutions in session state if not exists
@@ -354,39 +375,46 @@ if st.button("Calculate Mortar Adjustment"):
                                 st.rerun()
 
                     # Show saved solutions
-                    if st.session_state.saved_solutions:
-                        with st.expander(f"💾 Saved Solutions ({len(st.session_state.saved_solutions)})"):
-                            for idx, sol in enumerate(st.session_state.saved_solutions):
-                                st.markdown(f"**{sol['name']}**")
-                                st.caption(f"Grids: {sol['own_grid']} → {sol['target_grid']} | Elev diff: {sol['delta_elevation']} m")
-                                st.caption(f"{sol['faction']} - {sol['shell_type']}")
-                                st.markdown(f"Direction: **{sol['result']['direction_mils']} mils** | "
-                                            f"Elev: **{sol['result']['elevation_mils']} mils** | "
-                                            f"Rings: **{sol['result']['rings']}** | "
-                                            f"Range: **{sol['result']['range_m']} m** | "
-                                            f"TOF: **{sol['result']['time_of_flight_sec']} s**")
-                                st.markdown("---")
-                                if st.button("Load this solution", key=f"load_{idx}"):
-                                    # Optional: reload inputs (requires storing original inputs)
-                                    st.session_state.own_grid_temp = sol['own_grid']
-                                    st.session_state.target_grid_temp = sol['target_grid']
-                                    st.session_state.delta_elevation_temp = sol['delta_elevation']
-                                    st.rerun()
-                                if st.button("🗑️ Clear all saved solutions", type="primary"):
-                                    st.session_state.saved_solutions = []
-                                    st.success("All saved solutions cleared!")
-                                    st.rerun()
+                    if st.session_state.get('show_save_input', False):
+                        save_name = st.text_input("Enter a name for this firing solution", placeholder="e.g. Enemy squad at hill 245")
+                        col_save, col_cancel = st.columns(2)
+                        with col_save:
+                            if st.button("Confirm Save") and save_name.strip():
+                                saved_entry = {
+                                    "name": save_name.strip(),
+                                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                                    "own_grid": own_grid,
+                                    "target_grid": target_grid,
+                                    "delta_elevation": delta_elevation,
+                                    "faction": faction,
+                                    "shell_type": shell_type,
+                                    "result": result
+                                }
+                                st.session_state.saved_solutions.append(saved_entry)
+                                st.success(f"Saved as: **{save_name}**")
+                                st.session_state.show_save_input = False
+                                st.rerun()
+                        with col_cancel:
+                            if st.button("Cancel"):
+                                st.session_state.show_save_input = False
+                                st.rerun()
+
         except ValueError as e:
             st.error(str(e))
         except Exception as e:
             st.error(f"Calculation failed: {str(e)}")
 
 # Optional: Auto-fill inputs if loaded from saved
-if 'own_grid_temp' in st.session_state:
-    st.session_state.own_grid = st.session_state.own_grid_temp
-    st.session_state.target_grid = st.session_state.target_grid_temp
-    st.session_state.delta_elevation = st.session_state.delta_elevation_temp
-    # Clear temp keys after use
-    del st.session_state.own_grid_temp
-    del st.session_state.target_grid_temp
-    del st.session_state.delta_elevation_temp
+if st.session_state.last_result:
+    st.markdown("### Last Calculated Solution")
+    st.markdown(f"**Faction / Shell:** {st.session_state.last_faction} - {st.session_state.last_shell_type}")
+    st.markdown(f"**Your grid:** {st.session_state.last_own_grid}")
+    st.markdown(f"**Target grid:** {st.session_state.last_target_grid}")
+    st.markdown(f"**Elevation diff:** {st.session_state.last_delta_elevation} m")
+    st.markdown(f"**Direction:** {st.session_state.last_result['direction_mils']} mils")
+    st.markdown(f"**Adjusted Elevation:** {st.session_state.last_result['elevation_mils']} mils")
+    st.markdown(f"**Rings / Charge:** {st.session_state.last_result['rings']}")
+    st.markdown(f"**Horizontal Range:** {st.session_state.last_result['range_m']} m")
+    st.markdown(f"**Time of Flight:** {st.session_state.last_result['time_of_flight_sec']} seconds")
+    st.markdown(f"**Site correction:** {st.session_state.last_result['site_correction_mils']} mils")
+    st.markdown("---")
