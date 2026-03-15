@@ -32,6 +32,7 @@ def calculate_mortar_adjustment(own_grid, target_grid, delta_elevation_m=0, firi
    
     # Bearing in mils
     bearing_deg = (90 - math.degrees(math.atan2(delta_y, delta_x))) % 360
+    mils_per_circle = 6000 if faction_key == "RU" else 6400
     direction_mils = round(bearing_deg * (6400 / 360))
    
     # Find ring + table
@@ -209,6 +210,11 @@ mortar_tables = {
     },
     "RU": {
         "HE": [  # Placeholder for 2B14 Podnos HE (max ~2300m)
+            # ←←← ADD THIS AS THE FIRST RING (Ring 0)
+            {
+                50: (1540, 13.2), 100: (1479, 13.2), 150: (1417, 13.0), 200: (1350, 12.8),
+                250: (1279, 12.6), 300: (1202, 12.3), 350: (1107, 11.7), 400: (958, 10.7)
+            },
             # Ring 1 (Первый / First charge)
             {
                 100: (1446, 19.5), 200: (1392, 19.4), 300: (1335, 19.2), 400: (1275, 18.9),
